@@ -52,8 +52,6 @@ X_train, X_test = data_processor.split_data()
 logger.info("Training set shape: %s", X_train.shape)
 logger.info("Test set shape: %s", X_test.shape)
 
-# COMMAND ----------
-X_test.columns
 
 # COMMAND ----------
 # Save to catalog
