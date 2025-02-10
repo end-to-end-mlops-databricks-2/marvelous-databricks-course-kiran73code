@@ -50,3 +50,8 @@ ignore = [
 
 [tool.ruff.format]
 indent-style = "space"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9.6",
+]
