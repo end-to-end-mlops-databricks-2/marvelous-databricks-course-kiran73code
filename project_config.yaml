@@ -1,0 +1,22 @@
+catalog_name: mlops_dev
+schema_name: yellow_taxi
+
+parameters:
+  learning_rate: 0.01
+  n_estimators: 1000
+  max_depth: 6
+
+num_features:
+  - fare_amount
+  - passenger_count
+  - trip_distance
+ 
+
+cat_features:
+  - PULocationID
+  - transaction_month
+  - transaction_day
+  - transaction_hour
+
+
+target: total_amount
