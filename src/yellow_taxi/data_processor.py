@@ -17,7 +17,7 @@ class DataProcessor:
     def preprocess(self):
         """Preprocess the DataFrame stored in self.df"""
         # Select the required columns from the DataFrame
-        self.df = self.dft[['tpep_pickup_datetime','tpep_dropoff_datetime','passenger_count','trip_distance', 'fare_amount',
+        self.df = self.df[['tpep_pickup_datetime','tpep_dropoff_datetime','passenger_count','trip_distance', 'fare_amount',
             'PULocationID','total_amount']
         ]
         
