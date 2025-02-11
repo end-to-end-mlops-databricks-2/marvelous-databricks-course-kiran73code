@@ -1,5 +1,4 @@
 # Databricks notebook source
-from loguru import logger
 
 import mlflow
 from pyspark.sql import SparkSession
@@ -34,9 +33,9 @@ basic_model.train()
 basic_model.log_model()
 
 # COMMAND ----------
-run_id = mlflow.search_runs(
-    experiment_names=["/Shared/yellow-taxi-basic"], filter_string="tags.branch='week2'"
-).run_id[0]
+run_id = mlflow.search_runs(experiment_names=["/Shared/yellow-taxi-basic"], filter_string="tags.branch='week2'").run_id[
+    0
+]
 
 model = mlflow.sklearn.load_model(f"runs:/{run_id}/lightgbm-pipeline-model")
 

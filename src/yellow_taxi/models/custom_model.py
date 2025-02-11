@@ -1,17 +1,18 @@
-from loguru import logger
-import mlflow
 from typing import List
+
+import mlflow
+import numpy as np
+import pandas as pd
+from lightgbm import LGBMRegressor
+from loguru import logger
 from mlflow import MlflowClient
 from mlflow.models import infer_signature
 from mlflow.utils.environment import _mlflow_conda_env
-import pandas as pd
-import numpy as np
 from pyspark.sql import SparkSession
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
-from lightgbm import LGBMRegressor
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.preprocessing import OneHotEncoder
 
 from yellow_taxi.config import ProjectConfig, Tags
 from yellow_taxi.utils import adjust_predictions
@@ -37,6 +38,7 @@ class YellowTaxiModelWrapper(mlflow.pyfunc.PythonModel):
         predictions = self.model.predict(model_input)
         # looks like {"Prediction": 10000.0}
         return {"Prediction": adjust_predictions(predictions[0])}
+
 
 class CustomModel:
     def __init__(self, config: ProjectConfig, tags: Tags, spark: SparkSession, code_paths: List[str]):
@@ -68,7 +70,7 @@ class CustomModel:
         self.train_set_spark = self.spark.table(f"{self.catalog_name}.{self.schema_name}.train_set")
         self.train_set = self.train_set_spark.toPandas()
         self.test_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.test_set").toPandas()
-        self.data_version = "0" #describe history -> retrieve 
+        self.data_version = "0"  # describe history -> retrieve
 
         self.X_train = self.train_set[self.num_features + self.cat_features]
         self.y_train = self.train_set[self.target]
@@ -86,14 +88,12 @@ class CustomModel:
         """
         logger.info("🔄 Defining preprocessing pipeline...")
         self.preprocessor = ColumnTransformer(
-            transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), self.cat_features)], 
-            remainder='passthrough'
+            transformers=[("cat", OneHotEncoder(handle_unknown="ignore"), self.cat_features)], remainder="passthrough"
         )
 
-        self.pipeline = Pipeline(steps=[
-            ('preprocessor', self.preprocessor),
-            ('regressor', LGBMRegressor(**self.parameters))
-        ])
+        self.pipeline = Pipeline(
+            steps=[("preprocessor", self.preprocessor), ("regressor", LGBMRegressor(**self.parameters))]
+        )
         logger.info("✅ Preprocessing pipeline defined.")
 
     def train(self):
@@ -110,7 +110,7 @@ class CustomModel:
         mlflow.set_experiment(self.experiment_name)
         additional_pip_deps = ["pyspark==3.5.0"]
         for package in self.code_paths:
-            whl_name = package.split('/')[-1]
+            whl_name = package.split("/")[-1]
             additional_pip_deps.append(f"code/{whl_name}")
 
         with mlflow.start_run(tags=self.tags) as run:
@@ -134,25 +134,22 @@ class CustomModel:
             mlflow.log_metric("r2_score", r2)
 
             # Log the model
-            signature = infer_signature(model_input=self.X_train, 
-                                        model_output={'Prediction': 100000.0})
+            signature = infer_signature(model_input=self.X_train, model_output={"Prediction": 100000.0})
             dataset = mlflow.data.from_spark(
                 self.train_set_spark,
                 table_name=f"{self.catalog_name}.{self.schema_name}.train_set",
-                version=self.data_version
+                version=self.data_version,
             )
             mlflow.log_input(dataset, context="training")
 
-            conda_env = _mlflow_conda_env(
-                additional_pip_deps=additional_pip_deps
-            )
+            conda_env = _mlflow_conda_env(additional_pip_deps=additional_pip_deps)
 
             mlflow.pyfunc.log_model(
                 python_model=YellowTaxiModelWrapper(self.pipeline),
                 artifact_path="pyfunc-yellow-taxi-model",
                 code_paths=self.code_paths,
                 conda_env=conda_env,
-                signature=signature
+                signature=signature,
             )
 
     def register_model(self):
@@ -161,19 +158,19 @@ class CustomModel:
         """
         logger.info("🔄 Registering the model in UC...")
         registered_model = mlflow.register_model(
-            model_uri=f'runs:/{self.run_id}/pyfunc-yellow-taxi-model',
+            model_uri=f"runs:/{self.run_id}/pyfunc-yellow-taxi-model",
             name=f"{self.catalog_name}.{self.schema_name}.yellow_taxi_model_custom",
-            tags=self.tags
+            tags=self.tags,
         )
         logger.info(f"✅ Model registered as version {registered_model.version}.")
-        
+
         latest_version = registered_model.version
-        
+
         client = MlflowClient()
         client.set_registered_model_alias(
             name=f"{self.catalog_name}.{self.schema_name}.yellow_taxi_model_custom",
             alias="latest-model",
-            version=latest_version
+            version=latest_version,
         )
 
     def retrieve_current_run_dataset(self):

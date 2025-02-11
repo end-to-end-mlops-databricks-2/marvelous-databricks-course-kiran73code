@@ -14,7 +14,6 @@ class ProjectConfig(BaseModel):
     experiment_name_basic: Optional[str]
     experiment_name_custom: Optional[str]
     experiment_name_fe: Optional[str]
-    
 
     @classmethod
     def from_yaml(cls, config_path: str):
@@ -22,8 +21,8 @@ class ProjectConfig(BaseModel):
         with open(config_path, "r") as f:
             config_dict = yaml.safe_load(f)
         return cls(**config_dict)
-    
-    
+
+
 class Tags(BaseModel):
     git_sha: str
     branch: str

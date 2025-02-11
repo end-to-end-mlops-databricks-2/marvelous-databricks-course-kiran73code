@@ -1,12 +1,10 @@
 # Databricks notebook source
-from loguru import logger
 
 import mlflow
 from pyspark.sql import SparkSession
 
 from yellow_taxi.config import ProjectConfig, Tags
 from yellow_taxi.models.custom_model import CustomModel
-
 
 # COMMAND ----------
 # Default profile:
