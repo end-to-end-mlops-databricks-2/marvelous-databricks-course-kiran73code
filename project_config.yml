@@ -1,5 +1,8 @@
 catalog_name: mlops_dev
 schema_name: kirancr2
+experiment_name_basic: /Shared/yellow-taxi-basic
+experiment_name_custom: /Shared/yellow-taxi-custom
+experiment_name_fe: /Shared/yellow-taxi-fe
 
 parameters:
   learning_rate: 0.01
