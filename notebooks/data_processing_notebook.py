@@ -27,7 +27,7 @@ logger.info(yaml.dump(config, default_flow_style=False))
 
 # COMMAND ----------
 
-# Load the house prices dataset
+# Load the yellow taxi newyork  dataset
 spark = SparkSession.builder.getOrCreate()
 
 # df = spark.read.csv(

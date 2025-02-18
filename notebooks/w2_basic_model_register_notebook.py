@@ -24,6 +24,7 @@ tags = Tags(**{"git_sha": "abcd12345", "branch": "week2"})
 basic_model = BasicModel(config=config, tags=tags, spark=spark)
 
 # COMMAND ----------
+# Load data and prepare features
 basic_model.load_data()
 basic_model.prepare_features()
 
@@ -33,15 +34,12 @@ basic_model.train()
 basic_model.log_model()
 
 # COMMAND ----------
+# Retrieve the run_id for the current run and load the model
 run_id = mlflow.search_runs(experiment_names=["/Shared/yellow-taxi-basic"], filter_string="tags.branch='week2'").run_id[
     0
 ]
-
 model = mlflow.sklearn.load_model(f"runs:/{run_id}/lightgbm-pipeline-model")
 
-# COMMAND ----------
-# Retrieve dataset for the current run
-basic_model.retrieve_current_run_dataset()
 
 # COMMAND ----------
 # Retrieve metadata for the current run
@@ -58,5 +56,12 @@ test_set = spark.table(f"{config.catalog_name}.{config.schema_name}.test_set").l
 
 X_test = test_set.drop(config.target).toPandas()
 
-predictions_df = basic_model.load_latest_model_and_predict(X_test)
+predictions_list = basic_model.load_latest_model_and_predict(X_test)
+
+
+# COMMAND ----------
+# predicted values
+predictions_list
+
+
 # COMMAND ----------

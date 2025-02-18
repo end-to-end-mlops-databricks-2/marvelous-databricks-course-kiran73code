@@ -26,6 +26,7 @@ custom_model = CustomModel(
 )
 
 # COMMAND ----------
+# Load data and prepare features 
 custom_model.load_data()
 custom_model.prepare_features()
 
@@ -35,6 +36,7 @@ custom_model.train()
 custom_model.log_model()
 
 # COMMAND ----------
+# Retrieve the run_id for the current run and load the model
 run_id = mlflow.search_runs(experiment_names=["/Shared/yellow-taxi-custom"]).run_id[0]
 print(run_id)
 model = mlflow.pyfunc.load_model(f"runs:/{run_id}/pyfunc-yellow-taxi-model")
@@ -43,9 +45,6 @@ model = mlflow.pyfunc.load_model(f"runs:/{run_id}/pyfunc-yellow-taxi-model")
 # Retrieve dataset for the current run
 custom_model.retrieve_current_run_dataset()
 
-# COMMAND ----------
-# Retrieve metadata for the current run
-custom_model.retrieve_current_run_metadata()
 
 # COMMAND ----------
 # Register model
@@ -58,5 +57,6 @@ test_set = spark.table(f"{config.catalog_name}.{config.schema_name}.test_set").l
 
 X_test = test_set.drop(config.target).toPandas()
 
-predictions_df = custom_model.load_latest_model_and_predict(X_test)
+predictions_list = custom_model.load_latest_model_and_predict(X_test)
+predictions_list
 # COMMAND ----------

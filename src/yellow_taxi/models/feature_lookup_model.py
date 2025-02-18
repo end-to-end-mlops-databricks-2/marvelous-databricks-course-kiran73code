@@ -51,17 +51,16 @@ class FeatureLookUpModel:
         """
         self.spark.sql(f"""
         CREATE OR REPLACE TABLE {self.feature_table_name}
-        (Id STRING NOT NULL, transaction_date TIMESTAMP, transaction_day INT);
+        ( payment_type INT NOT NULL, payment_type_discount DOUBLE NOT NULL);
         """)
-        self.spark.sql(f"ALTER TABLE {self.feature_table_name} ADD CONSTRAINT yellow_taxi_pk PRIMARY KEY(Id);")
+        self.spark.sql(f"ALTER TABLE {self.feature_table_name} ADD CONSTRAINT payment_type_pk PRIMARY KEY(payment_type);")
         self.spark.sql(f"ALTER TABLE {self.feature_table_name} SET TBLPROPERTIES (delta.enableChangeDataFeed = true);")
 
+        logger.info("train_set table contain all payment_discount_type.")
         self.spark.sql(
-            f"INSERT INTO {self.feature_table_name} SELECT Id, transaction_date, transaction_day  FROM {self.catalog_name}.{self.schema_name}.train_set"
+            f"INSERT INTO {self.feature_table_name} SELECT DISTINCT(payment_type) payment_type_discount  FROM {self.catalog_name}.{self.schema_name}.train_set"
         )
-        self.spark.sql(
-            f"INSERT INTO {self.feature_table_name} SELECT Id, transaction_date, transaction_day FROM {self.catalog_name}.{self.schema_name}.test_set"
-        )
+
         logger.info("✅ Feature table created and populated.")
 
     def define_feature_function(self):
@@ -69,14 +68,14 @@ class FeatureLookUpModel:
         Define a function to calculate the weekend or not.
         """
         self.spark.sql(f"""
-        CREATE OR REPLACE FUNCTION {self.function_name}(transaction_day INT)
+        CREATE OR REPLACE FUNCTION {self.function_name}(transaction_day INT, transaction_month INT, transaction_year INT)
         RETURNS INT
         LANGUAGE PYTHON AS
         $$
         from datetime import datetime, timedelta
         import pytz
-        # Start date for the dataset is June 1, 2020 bcz the dataset is for June 2020
-        start_date = datetime(2020, 6, 1, tzinfo=pytz.timezone('America/New_York'))
+        # Start date always consider 1st of the month
+        start_date = datetime(transaction_year, transaction_month, 1, tzinfo=pytz.timezone('America/New_York'))
         day_number = transaction_day 
         target_date = start_date + timedelta(days=day_number - 1)
         return 1 if target_date.weekday() >= 5 else 0
@@ -98,12 +97,12 @@ class FeatureLookUpModel:
 
         logger.info("✅ Data successfully loaded.")
 
-    def is_weekend(self, transaction_day: int) -> int:
+    def is_weekend(self, transaction_day: int, transaction_month: int, transaction_year: int) -> int:
         """
         Calculate if the day is a weekend or not.
         """
-        # Start date for the dataset is June 1, 2020 bcz the dataset is for June 2020
-        start_date = datetime(2020, 6, 1, tzinfo=pytz.timezone("America/New_York"))
+        # Start date consider always 1st of the month
+        start_date = datetime(transaction_year, transaction_month, 1, tzinfo=pytz.timezone("America/New_York"))
         target_date = start_date + timedelta(days=transaction_day - 1)
         return 1 if target_date.weekday() >= 5 else 0
     
@@ -117,21 +116,24 @@ class FeatureLookUpModel:
             feature_lookups=[
                 FeatureLookup(
                     table_name=self.feature_table_name,
-                    feature_names=["transaction_date", "transaction_day"],
-                    lookup_key="Id",
+                    feature_names=["payment_discount_type"],
+                    lookup_key="payment_type",
                 ),
                 FeatureFunction(
                     udf_name=self.function_name,
                     output_name="is_weekend",
-                    input_bindings={"transaction_day": "transaction_day"},
+                    input_bindings={"transaction_day": "transaction_day",
+                                    "transaction_month": "transaction_month",
+                                    "transaction_year": "transaction_year"},
                 ),
             ],
             exclude_columns=["update_timestamp_utc"],
         )
-
-        self.training_df = self.training_set.load_df().toPandas()
         
-        self.test_set["is_weekend"] = self.test_set["transaction_day"].apply(self.is_weekend)
+        self.training_df = self.training_set.load_df().toPandas()
+
+        # Calculate is_weekend for the test set
+        self.test_df["is_weekend"] = self.test_set.apply(lambda row: self.is_weekend(row["transaction_day"], row["transaction_month"], row["transaction_year"]), axis=1)
 
         self.X_train = self.training_df[self.num_features + self.cat_features + ["is_weekend"]]
         self.y_train = self.training_df[self.target]
