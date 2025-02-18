@@ -50,7 +50,7 @@ class FeatureLookUpModel:
         """
         self.spark.sql(f"""
         CREATE OR REPLACE TABLE {self.feature_table_name}
-        ( payment_type INT NOT NULL, payment_type_discount DOUBLE NOT NULL);
+        (payment_type INT NOT NULL, payment_type_discount DOUBLE NOT NULL);
         """)
         self.spark.sql(
             f"ALTER TABLE {self.feature_table_name} ADD CONSTRAINT payment_type_pk PRIMARY KEY(payment_type);"
@@ -59,7 +59,7 @@ class FeatureLookUpModel:
 
         logger.info("train_set table contain all payment_discount_type.")
         self.spark.sql(
-            f"INSERT INTO {self.feature_table_name} SELECT DISTINCT(payment_type) payment_type_discount  FROM {self.catalog_name}.{self.schema_name}.train_set"
+            f"INSERT INTO {self.feature_table_name} SELECT DISTINCT(payment_type), payment_type_discount  FROM {self.catalog_name}.{self.schema_name}.train_set"
         )
 
         logger.info("✅ Feature table created and populated.")
