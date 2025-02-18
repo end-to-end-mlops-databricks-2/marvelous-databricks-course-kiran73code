@@ -20,6 +20,7 @@ dependencies = [
     "databricks-sdk==0.32.0",
     "pydantic==2.9.2",
     "loguru>=0.7.3",
+    "pytz>=2025.1",
 ]
 
 [project.optional-dependencies]
