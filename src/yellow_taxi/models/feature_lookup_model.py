@@ -92,12 +92,11 @@ class FeatureLookUpModel:
         self.train_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.train_set").drop(
             "payment_discount_type"
         )
-        
+
         # we are not removing the payment_discount_type column from the test set as we are going to use it for prediction
         self.test_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.test_set").toPandas()
 
         logger.info("✅ Data successfully loaded.")
-
 
     def is_weekend(self, transaction_day: int, transaction_month: int, transaction_year: int) -> int:
         """
@@ -145,7 +144,7 @@ class FeatureLookUpModel:
         # training_df is feature engineered training set and  test set is normal table data without feature engineering
         self.X_train = self.training_df[self.num_features + self.cat_features + ["is_weekend"]]
         self.y_train = self.training_df[self.target]
-        
+
         self.X_test = self.test_set[self.num_features + self.cat_features + ["is_weekend"]]
         self.y_test = self.test_set[self.target]
 
