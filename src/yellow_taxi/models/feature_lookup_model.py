@@ -93,10 +93,8 @@ class FeatureLookUpModel:
         )
         self.test_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.test_set").toPandas()
 
-        self.train_set = self.train_set.withColumn("is_weekend", self.train_set["is_weekend"].cast("int"))
-        
-
         logger.info("✅ Data successfully loaded.")
+
 
     def is_weekend(self, transaction_day: int, transaction_month: int, transaction_year: int) -> int:
         """
