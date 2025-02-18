@@ -90,7 +90,7 @@ class FeatureLookUpModel:
         """
         # we droping the payment_discount_type column as we are going to use the feature lookup table
         self.train_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.train_set").drop(
-            "payment_discount_type"
+            "payment_type_discount"
         )
 
         # we are not removing the payment_discount_type column from the test set as we are going to use it for prediction
@@ -118,7 +118,7 @@ class FeatureLookUpModel:
             feature_lookups=[
                 FeatureLookup(
                     table_name=self.feature_table_name,
-                    feature_names=["payment_discount_type"],
+                    feature_names=["payment_type_discount"],
                     lookup_key="payment_type",
                 ),
                 FeatureFunction(
