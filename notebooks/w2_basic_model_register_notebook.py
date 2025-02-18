@@ -60,8 +60,3 @@ predictions_list = basic_model.load_latest_model_and_predict(X_test)
 
 
 # COMMAND ----------
-# predicted values
-predictions_list
-
-
-# COMMAND ----------

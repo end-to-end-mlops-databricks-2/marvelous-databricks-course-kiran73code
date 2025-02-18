@@ -1,16 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import mlflow
+import pytz
 from databricks import feature_engineering
 from databricks.feature_engineering import FeatureFunction, FeatureLookup
 from databricks.sdk import WorkspaceClient
-from datetime import datetime, timedelta
 from lightgbm import LGBMRegressor
 from loguru import logger
 from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 from pyspark.sql import SparkSession
-import pytz
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
@@ -53,7 +52,9 @@ class FeatureLookUpModel:
         CREATE OR REPLACE TABLE {self.feature_table_name}
         ( payment_type INT NOT NULL, payment_type_discount DOUBLE NOT NULL);
         """)
-        self.spark.sql(f"ALTER TABLE {self.feature_table_name} ADD CONSTRAINT payment_type_pk PRIMARY KEY(payment_type);")
+        self.spark.sql(
+            f"ALTER TABLE {self.feature_table_name} ADD CONSTRAINT payment_type_pk PRIMARY KEY(payment_type);"
+        )
         self.spark.sql(f"ALTER TABLE {self.feature_table_name} SET TBLPROPERTIES (delta.enableChangeDataFeed = true);")
 
         logger.info("train_set table contain all payment_discount_type.")
@@ -76,7 +77,7 @@ class FeatureLookUpModel:
         import pytz
         # Start date always consider 1st of the month
         start_date = datetime(transaction_year, transaction_month, 1, tzinfo=pytz.timezone('America/New_York'))
-        day_number = transaction_day 
+        day_number = transaction_day
         target_date = start_date + timedelta(days=day_number - 1)
         return 1 if target_date.weekday() >= 5 else 0
         $$
@@ -105,7 +106,7 @@ class FeatureLookUpModel:
         start_date = datetime(transaction_year, transaction_month, 1, tzinfo=pytz.timezone("America/New_York"))
         target_date = start_date + timedelta(days=transaction_day - 1)
         return 1 if target_date.weekday() >= 5 else 0
-    
+
     def feature_engineering(self):
         """
         Perform feature engineering by linking data with feature tables.
@@ -122,18 +123,23 @@ class FeatureLookUpModel:
                 FeatureFunction(
                     udf_name=self.function_name,
                     output_name="is_weekend",
-                    input_bindings={"transaction_day": "transaction_day",
-                                    "transaction_month": "transaction_month",
-                                    "transaction_year": "transaction_year"},
+                    input_bindings={
+                        "transaction_day": "transaction_day",
+                        "transaction_month": "transaction_month",
+                        "transaction_year": "transaction_year",
+                    },
                 ),
             ],
             exclude_columns=["update_timestamp_utc"],
         )
-        
+
         self.training_df = self.training_set.load_df().toPandas()
 
         # Calculate is_weekend for the test set
-        self.test_df["is_weekend"] = self.test_set.apply(lambda row: self.is_weekend(row["transaction_day"], row["transaction_month"], row["transaction_year"]), axis=1)
+        self.test_df["is_weekend"] = self.test_set.apply(
+            lambda row: self.is_weekend(row["transaction_day"], row["transaction_month"], row["transaction_year"]),
+            axis=1,
+        )
 
         self.X_train = self.training_df[self.num_features + self.cat_features + ["is_weekend"]]
         self.y_train = self.training_df[self.target]

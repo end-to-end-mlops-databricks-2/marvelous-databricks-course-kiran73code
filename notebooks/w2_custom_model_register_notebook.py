@@ -26,7 +26,7 @@ custom_model = CustomModel(
 )
 
 # COMMAND ----------
-# Load data and prepare features 
+# Load data and prepare features
 custom_model.load_data()
 custom_model.prepare_features()
 
@@ -58,5 +58,4 @@ test_set = spark.table(f"{config.catalog_name}.{config.schema_name}.test_set").l
 X_test = test_set.drop(config.target).toPandas()
 
 predictions_list = custom_model.load_latest_model_and_predict(X_test)
-predictions_list
 # COMMAND ----------
