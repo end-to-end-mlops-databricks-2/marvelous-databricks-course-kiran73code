@@ -1,4 +1,12 @@
 # Databricks notebook source
+# MAGIC %pip install  ../ 
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
+
+# COMMAND ----------
+
 import mlflow
 from loguru import logger
 from pyspark.sql import SparkSession
@@ -10,43 +18,50 @@ from yellow_taxi.models.feature_lookup_model import FeatureLookUpModel
 mlflow.set_tracking_uri("databricks")
 mlflow.set_registry_uri("databricks-uc")
 
-config = ProjectConfig.from_yaml(config_path="project_config.yml")
+config = ProjectConfig.from_yaml(config_path="../project_config.yml")
 spark = SparkSession.builder.getOrCreate()
 tags_dict = {"git_sha": "abcd12345", "branch": "week2"}
 tags = Tags(**tags_dict)
 
-config = ProjectConfig.from_yaml(config_path="/Volumes/mlops_dev/kirancr2/yellow_taxi/project_config.yml")
 
 
 # COMMAND ----------
+
 # Initialize model
 fe_model = FeatureLookUpModel(config=config, tags=tags, spark=spark)
 
 # COMMAND ----------
+
 # Create feature table
 fe_model.create_feature_table()
 
 # COMMAND ----------
-# Define house age feature function
+
+# Define is_weekend feature function
 fe_model.define_feature_function()
 
 # COMMAND ----------
+
 # Load data
 fe_model.load_data()
 
 # COMMAND ----------
+
 # Perform feature engineering
 fe_model.feature_engineering()
 
 # COMMAND ----------
+
 # Train the model
 fe_model.train()
 
 # COMMAND ----------
+
 # Train the model
 fe_model.register_model()
 
 # COMMAND ----------
+
 # Lets run prediction on the last production model
 # Load test set from Delta table
 spark = SparkSession.builder.getOrCreate()
@@ -58,6 +73,7 @@ X_test = test_set.drop("payment_type_discount", config.target)
 
 
 # COMMAND ----------
+
 fe_model = FeatureLookUpModel(config=config, tags=tags, spark=spark)
 
 # Make predictions
