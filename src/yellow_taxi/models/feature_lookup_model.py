@@ -88,9 +88,12 @@ class FeatureLookUpModel:
         """
         Load training and testing data from Delta tables.
         """
+        # we droping the payment_discount_type column as we are going to use the feature lookup table
         self.train_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.train_set").drop(
             "payment_discount_type"
         )
+        
+        # we are not removing the payment_discount_type column from the test set as we are going to use it for prediction
         self.test_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.test_set").toPandas()
 
         logger.info("✅ Data successfully loaded.")
@@ -109,6 +112,7 @@ class FeatureLookUpModel:
         """
         Perform feature engineering by linking data with feature tables.
         """
+        # Using feature engineering client to create training set it will automatically link extra features from the feature lookup table and feature function return value
         self.training_set = self.fe.create_training_set(
             df=self.train_set,
             label=self.target,
@@ -133,14 +137,15 @@ class FeatureLookUpModel:
 
         self.training_df = self.training_set.load_df().toPandas()
 
-        # Calculate is_weekend for the test set
-        self.test_df["is_weekend"] = self.test_set.apply(
+        # Calculate is_weekend for the test set bcz we are not using feature engineering client for the test set
+        self.test_set["is_weekend"] = self.test_set.apply(
             lambda row: self.is_weekend(row["transaction_day"], row["transaction_month"], row["transaction_year"]),
             axis=1,
         )
-
+        # training_df is feature engineered training set and  test set is normal table data without feature engineering
         self.X_train = self.training_df[self.num_features + self.cat_features + ["is_weekend"]]
         self.y_train = self.training_df[self.target]
+        
         self.X_test = self.test_set[self.num_features + self.cat_features + ["is_weekend"]]
         self.y_test = self.test_set[self.target]
 
