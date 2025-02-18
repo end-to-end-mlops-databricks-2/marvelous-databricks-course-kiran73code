@@ -21,30 +21,24 @@ fe_model = FeatureLookUpModel(config=config, tags=tags, spark=spark)
 fe_model.create_feature_table()
 
 
-
 # Define is_weekend feature function
 fe_model.define_feature_function()
-
 
 
 # Load data
 fe_model.load_data()
 
 
-
 # Perform feature engineering
 fe_model.feature_engineering()
-
 
 
 # Train the model
 fe_model.train()
 
 
-
 # Train the model
 fe_model.register_model()
-
 
 
 # Lets run prediction on the last production model
