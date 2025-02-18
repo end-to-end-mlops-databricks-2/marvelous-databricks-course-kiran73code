@@ -89,12 +89,12 @@ class FeatureLookUpModel:
         Load training and testing data from Delta tables.
         """
         self.train_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.train_set").drop(
-            "transaction_date", "transaction_day"
+            "payment_discount_type"
         )
         self.test_set = self.spark.table(f"{self.catalog_name}.{self.schema_name}.test_set").toPandas()
 
-        self.train_set = self.train_set.withColumn("is_weekend", self.train_set["IsWeekend"].cast("int"))
-        self.train_set = self.train_set.withColumn("Id", self.train_set["Id"].cast("string"))
+        self.train_set = self.train_set.withColumn("is_weekend", self.train_set["is_weekend"].cast("int"))
+        
 
         logger.info("✅ Data successfully loaded.")
 
