@@ -24,6 +24,7 @@ class DataProcessor:
                 "fare_amount",
                 "PULocationID",
                 "total_amount",
+                "payment_type",
             ]
         ]
 
@@ -52,6 +53,30 @@ class DataProcessor:
         # Filter the data for particuar year and month
         self.df = self.df[(self.df["transaction_year"] == 2020) & (self.df["transaction_month"] == 6)]
 
+        # based on the payment type we are giving discount to the customers
+        """
+            1 = Credit card
+            2 = Cash
+            3 = No charge
+            4 = Dispute
+            5 = Unknown
+            6 = Voided trip
+
+            we are promoting the customers to use credit card so we are giving discount to the customers who are using credit card
+            also we are giving discount to the customers who are paying with cash
+            discount = 3$ / int(payment_type)
+            based on the BASE DISCOUNT PRICE we are going to calculate the discount ,
+            in future we can change the BASE DISCOUNT PRICE(use feature LOOKUP later)
+            discount amount we are going to create a new column called 'payment_type_discount'
+        """
+        # convert the payment type to int and replace NaN with 7
+        self.df["payment_type"] = self.df["payment_type"].fillna(7).astype(int)
+        BASE_DISCOUNT_PRICE = 3
+
+        self.df["payment_type_discount"] = self.df["payment_type"].apply(
+            lambda x: BASE_DISCOUNT_PRICE / int(x) if x < 7 else 0
+        )
+
         # select the required columns for feature engineering
         categorical_columns = [
             "PULocationID",
@@ -59,8 +84,10 @@ class DataProcessor:
             "transaction_month",
             "transaction_day",
             "transaction_hour",
+            "transaction_year",
+            "payment_type",
         ]
-        numerical_columns = ["total_amount", "trip_distance", "fare_amount", "passenger_count"]
+        numerical_columns = ["total_amount", "trip_distance", "fare_amount", "passenger_count", "payment_type_discount"]
         all_needed_columns = categorical_columns + numerical_columns
         self.df = self.df[all_needed_columns]
 
@@ -71,8 +98,16 @@ class DataProcessor:
         self.df["transaction_count"] = self.df.groupby(categorical_columns).count().reset_index()["total_amount"]
 
         # Extract the required columns from the DataFrame
-        cat_features = ["PULocationID", "transaction_date", "transaction_month", "transaction_day", "transaction_hour"]
-        num_features = ["trip_distance", "fare_amount", "passenger_count"]
+        cat_features = [
+            "PULocationID",
+            "transaction_date",
+            "transaction_month",
+            "transaction_day",
+            "transaction_hour",
+            "transaction_year",
+            "payment_type",
+        ]
+        num_features = ["trip_distance", "fare_amount", "passenger_count", "payment_type_discount"]
 
         # Extract target and relevant features
         target = self.config.target
