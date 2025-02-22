@@ -80,7 +80,6 @@ class DataProcessor:
         # select the required columns for feature engineering
         categorical_columns = [
             "PULocationID",
-            "transaction_date",
             "transaction_month",
             "transaction_day",
             "transaction_hour",
@@ -100,7 +99,6 @@ class DataProcessor:
         # Extract the required columns from the DataFrame
         cat_features = [
             "PULocationID",
-            "transaction_date",
             "transaction_month",
             "transaction_day",
             "transaction_hour",
