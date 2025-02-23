@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install yellow_taxi-0.0.1-py3-none-any.whl
+# MAGIC %pip install ../
 # MAGIC %restart_python
 # COMMAND ----------
 import os
