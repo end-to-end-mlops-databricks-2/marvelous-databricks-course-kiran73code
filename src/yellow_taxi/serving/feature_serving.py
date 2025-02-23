@@ -25,7 +25,7 @@ class FeatureServing:
         Creates an online table based on the feature table.
         """
         spec = OnlineTableSpec(
-            primary_key_columns=["Id"],
+            primary_key_columns=["trip_id"],
             source_table_full_name=self.feature_table_name,
             run_triggered=OnlineTableSpecTriggeredSchedulingPolicy.from_dict({"triggered": "true"}),
             perform_full_copy=False,
@@ -39,8 +39,8 @@ class FeatureServing:
         features = [
             FeatureLookup(
                 table_name=self.feature_table_name,
-                lookup_key="payment_type",
-                feature_names=["payment_type_discount"],
+                lookup_key="trip_id",
+                feature_names=["trip_distance", "passenger_count", "payment_type_discount", "Predicted_TaxiAmount"],
             )
         ]
         self.fe.create_feature_spec(name=self.feature_spec_name, features=features, exclude_columns=None)

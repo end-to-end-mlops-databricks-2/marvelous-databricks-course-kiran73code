@@ -26,6 +26,7 @@ spark = SparkSession.builder.getOrCreate()
 dbutils = DBUtils(spark)
 
 fe = feature_engineering.FeatureEngineeringClient()
+mlflow.set_tracking_uri("databricks")
 mlflow.set_registry_uri("databricks-uc")
 
 # COMMAND ----------
@@ -50,12 +51,12 @@ df = pd.concat([train_set, test_set])
 model = mlflow.sklearn.load_model(f"models:/{catalog_name}.{schema_name}.yellow_taxi_model_basic@latest-model")
 
 
-preds_df = df[["payment_type", "payment_type_discount"]]
-preds_df["Predicted_SalePrice"] = model.predict(df[config.cat_features + config.num_features])
+preds_df = df[["trip_id", "trip_distance", "passenger_count", "payment_type_discount"]]
+preds_df["Predicted_TaxiAmount"] = model.predict(df[config.cat_features + config.num_features])
 preds_df = spark.createDataFrame(preds_df)
 
 fe.create_table(
-    name=feature_table_name, primary_keys=["Id"], df=preds_df, description="House Prices predictions feature table"
+    name=feature_table_name, primary_keys=["trip_id"], df=preds_df, description="yellow taxi predictions feature table"
 )
 
 spark.sql(f"""
@@ -88,7 +89,7 @@ serving_endpoint = f"https://{os.environ['DBR_HOST']}/serving-endpoints/{endpoin
 response = requests.post(
     f"{serving_endpoint}",
     headers={"Authorization": f"Bearer {os.environ['DBR_TOKEN']}"},
-    json={"dataframe_records": [{"payment_type": "4"}]},
+    json={"dataframe_records": [{"trip_id": "40"}]},
 )
 
 end_time = time.time()
@@ -105,5 +106,5 @@ print("Execution time:", execution_time, "seconds")
 response = requests.post(
     f"{serving_endpoint}",
     headers={"Authorization": f"Bearer {os.environ['DBR_TOKEN']}"},
-    json={"dataframe_split": {"columns": ["payment_type"], "data": [["4"]]}},
+    json={"dataframe_split": {"columns": ["trip_id"], "data": [["40"]]}},
 )
