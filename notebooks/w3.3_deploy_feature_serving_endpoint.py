@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install house_price-0.0.1-py3-none-any.whl
+# MAGIC %pip install ../.
 
 # COMMAND ----------
 # MAGIC %restart_python
@@ -89,7 +89,7 @@ serving_endpoint = f"https://{os.environ['DBR_HOST']}/serving-endpoints/{endpoin
 response = requests.post(
     f"{serving_endpoint}",
     headers={"Authorization": f"Bearer {os.environ['DBR_TOKEN']}"},
-    json={"dataframe_records": [{"trip_id": "40"}]},
+    json={"dataframe_records": [{"trip_id": "7684"}]},
 )
 
 end_time = time.time()
@@ -106,5 +106,5 @@ print("Execution time:", execution_time, "seconds")
 response = requests.post(
     f"{serving_endpoint}",
     headers={"Authorization": f"Bearer {os.environ['DBR_TOKEN']}"},
-    json={"dataframe_split": {"columns": ["trip_id"], "data": [["40"]]}},
+    json={"dataframe_split": {"columns": ["trip_id"], "data": [["7684"]]}},
 )
