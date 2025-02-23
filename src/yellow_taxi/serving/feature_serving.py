@@ -53,7 +53,7 @@ class FeatureServing:
         """
         endpoint_exists = any(item.name == self.endpoint_name for item in self.workspace.serving_endpoints.list())
 
-        served_entities = served_entities = [
+        served_entities = [
             ServedEntityInput(
                 entity_name=self.feature_spec_name, scale_to_zero_enabled=scale_to_zero, workload_size=workload_size
             )
