@@ -5,11 +5,11 @@
 # MAGIC %restart_python
 
 # COMMAND ----------
-import mlflow
 import os
 import time
 from typing import Dict, List
 
+import mlflow
 import requests
 from loguru import logger
 from pyspark.dbutils import DBUtils
@@ -34,12 +34,10 @@ schema_name = config.schema_name
 endpoint_name = "yellow-taxi-model-serving-fe"
 
 
-
 # COMMAND ----------
 # set the tracking and registry uri to access the model metadata
 mlflow.set_tracking_uri("databricks://dbc-4894232b-9fc5")
 mlflow.set_registry_uri("databricks-uc://dbc-4894232b-9fc5")
-
 
 
 # COMMAND ----------

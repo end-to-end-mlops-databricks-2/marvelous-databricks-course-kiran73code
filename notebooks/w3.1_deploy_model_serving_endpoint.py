@@ -2,11 +2,11 @@
 # MAGIC %pip install yellow_taxi-0.0.1-py3-none-any.whl
 # MAGIC %restart_python
 # COMMAND ----------
-import mlflow
 import os
 import time
 from typing import Dict, List
 
+import mlflow
 import requests
 from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
@@ -29,7 +29,7 @@ print(os.environ["DBR_HOST"])
 config = ProjectConfig.from_yaml(config_path="../project_config.yml")
 catalog_name = config.catalog_name
 schema_name = config.schema_name
-endpoint_name="yellow-taxi-model-serving"
+endpoint_name = "yellow-taxi-model-serving"
 
 
 # COMMAND ----------
@@ -100,7 +100,7 @@ def call_endpoint(record: List[Dict]):
     """
     Calls the model serving endpoint with a given input record.
     """
-    
+
     serving_endpoint = f"https://{os.environ['DBR_HOST']}/serving-endpoints/{endpoint_name}/invocations"
 
     response = requests.post(
@@ -109,6 +109,7 @@ def call_endpoint(record: List[Dict]):
         json={"dataframe_records": record},
     )
     return response.status_code, response.text
+
 
 # COMMAND ----------
 # Call the endpoint with one sample record
