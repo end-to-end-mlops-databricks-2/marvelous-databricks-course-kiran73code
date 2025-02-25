@@ -80,7 +80,6 @@ class DataProcessor:
         # select the required columns for feature engineering
         categorical_columns = [
             "PULocationID",
-            "transaction_date",
             "transaction_month",
             "transaction_day",
             "transaction_hour",
@@ -100,7 +99,6 @@ class DataProcessor:
         # Extract the required columns from the DataFrame
         cat_features = [
             "PULocationID",
-            "transaction_date",
             "transaction_month",
             "transaction_day",
             "transaction_hour",
@@ -113,6 +111,10 @@ class DataProcessor:
         target = self.config.target
         relevant_columns = cat_features + num_features + [target]
         self.df = self.df[relevant_columns]
+        self.df.reset_index(drop=True, inplace=True)
+        # trip_id column is created for the purpose of tracking the records
+        self.df["trip_id"] = self.df.index + 1
+        self.df["trip_id"] = self.df["trip_id"].astype(str)
 
     def split_data(self, test_size=0.2, random_state=42):
         """Split the DataFrame (self.df) into training and test sets."""
