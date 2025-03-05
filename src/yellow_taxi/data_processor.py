@@ -72,9 +72,13 @@ class DataProcessor:
             in future we can change the BASE DISCOUNT PRICE(use feature LOOKUP later)
             discount amount we are going to create a new column called 'payment_type_discount'
         """
+
         # convert the payment type to int and replace NaN with 7
         self.df["payment_type"] = self.df["payment_type"].fillna(7).astype(int)
         BASE_DISCOUNT_PRICE = 3
+
+        # payment type  value 0 it's not valid payment so update to default payment type 7.
+        self.df["payment_type"] = self.df["payment_type"].apply(lambda x: 7 if x == 0 else x)
 
         self.df["payment_type_discount"] = self.df["payment_type"].apply(
             lambda x: BASE_DISCOUNT_PRICE / int(x) if x < 7 else 0
@@ -171,9 +175,9 @@ def generate_synthetic_data(df, num_rows=10):
 
         # Generate synthetic data based on the categorical column type
         elif pd.api.types.is_categorical_dtype(df[column]) or pd.api.types.is_object_dtype(df[column]):
-            synthetic_data[column] = np.random.choice(
-                df[column].unique(), num_rows, p=df[column].value_counts(normalize=True)
-            )
+            unique_values = df[column].dropna().unique()
+            probabilities = df[column].value_counts(normalize=True).reindex(unique_values).fillna(0).values
+            synthetic_data[column] = np.random.choice(unique_values, num_rows, p=probabilities)
 
         # Generate synthetic data based on the datetime column type
         elif pd.api.types.is_datetime64_any_dtype(df[column]):
@@ -189,8 +193,6 @@ def generate_synthetic_data(df, num_rows=10):
 
     # Convert relevant numeric columns to integers
     int_columns = {
-        "passenger_count",
-        "PULocationID",
         "payment_type",
         "DOLocationID",
         "RatecodeID",
@@ -200,6 +202,7 @@ def generate_synthetic_data(df, num_rows=10):
 
     # Convert relevant numeric columns to floats
     float_columns = {
+        "passenger_count",
         "trip_distance",
         "fare_amount",
         "extra",

@@ -102,7 +102,8 @@ spark = SparkSession.builder.getOrCreate()
 test_set = spark.table(f"{config.catalog_name}.{config.schema_name}.test_set").limit(100)
 
 # Drop feature lookup columns and target
-test_set = test_set.drop("payment_type_discount", config.target)
+test_set = test_set.drop("payment_type_discount")
+
 
 model_improved = fe_model.model_improved(test_set=test_set)
 logger.info("Model evaluation completed, model improved: ", model_improved)

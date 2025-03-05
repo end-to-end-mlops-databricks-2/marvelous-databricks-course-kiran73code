@@ -259,6 +259,7 @@ class FeatureLookUpModel:
         Evaluate the model performance on the test dataset.
         """
         X_test = test_set.drop(self.config.target)
+        test_set = test_set.select("trip_id", "total_amount")
 
         predictions_latest = self.load_latest_model_and_predict(X_test).withColumnRenamed(
             "prediction", "prediction_latest"
@@ -268,8 +269,6 @@ class FeatureLookUpModel:
         predictions_current = self.fe.score_batch(model_uri=current_model_uri, df=X_test).withColumnRenamed(
             "prediction", "prediction_current"
         )
-
-        test_set = test_set.select("trip_id", "total_amount")
 
         logger.info("Predictions are ready.")
 

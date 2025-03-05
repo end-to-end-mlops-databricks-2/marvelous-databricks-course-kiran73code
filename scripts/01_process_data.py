@@ -39,7 +39,7 @@ logger.info(yaml.dump(config, default_flow_style=False))
 spark = SparkSession.builder.getOrCreate()
 
 df = spark.read.csv(
-    f"/Volumes/{config.catalog_name}/{config.schema_name}/yello_taxi/yellow_tripdata_2020-06.csv",
+    f"/Volumes/{config.catalog_name}/{config.schema_name}/yellow_taxi/yellow_tripdata_2020-06.csv",
     header=True,
     inferSchema=True,
 ).toPandas()

@@ -17,7 +17,7 @@ variables:
     default: assetbundledeply
   branch:
     description: branch
-    default: feature/asset_bundles
+    default: main
   schedule_pause_status:
     description: schedule pause status
     default: UNPAUSED
