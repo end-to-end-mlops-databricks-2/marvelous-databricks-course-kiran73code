@@ -1,3 +1,6 @@
+import time
+
+import numpy as np
 import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import current_timestamp, to_utc_timestamp
@@ -112,9 +115,10 @@ class DataProcessor:
         relevant_columns = cat_features + num_features + [target]
         self.df = self.df[relevant_columns]
         self.df.reset_index(drop=True, inplace=True)
-        # trip_id column is created for the purpose of tracking the records
-        self.df["trip_id"] = self.df.index + 1
-        self.df["trip_id"] = self.df["trip_id"].astype(str)
+
+        # trip_id column is created for the purpose of tracking the records and feature lookup
+        timestamp_base = int(time.time() * 1000)
+        self.df["trip_id"] = [str(timestamp_base + i) for i in range(self.df.shape[0])]
 
     def split_data(self, test_size=0.2, random_state=42):
         """Split the DataFrame (self.df) into training and test sets."""
@@ -150,3 +154,62 @@ class DataProcessor:
             f"ALTER TABLE {self.config.catalog_name}.{self.config.schema_name}.test_set "
             "SET TBLPROPERTIES (delta.enableChangeDataFeed = true);"
         )
+
+
+def generate_synthetic_data(df, num_rows=10):
+    """Generates synthetic data based on the distribution of the input DataFrame."""
+    synthetic_data = pd.DataFrame()
+
+    for column in df.columns:
+        # Generate synthetic data based on the column type
+
+        # Generate synthetic data based on the numeric column type
+        if pd.api.types.is_numeric_dtype(df[column]):
+            # if columns contain data like year, month etc we need to generate min max distribution values.
+            # synthetic_data[column] = np.random.randint(df[column].min(), df[column].max() + 1, num_rows)
+            synthetic_data[column] = np.random.normal(df[column].mean(), df[column].std(), num_rows)
+
+        # Generate synthetic data based on the categorical column type
+        elif pd.api.types.is_categorical_dtype(df[column]) or pd.api.types.is_object_dtype(df[column]):
+            synthetic_data[column] = np.random.choice(
+                df[column].unique(), num_rows, p=df[column].value_counts(normalize=True)
+            )
+
+        # Generate synthetic data based on the datetime column type
+        elif pd.api.types.is_datetime64_any_dtype(df[column]):
+            min_date, max_date = df[column].min(), df[column].max()
+            synthetic_data[column] = pd.to_datetime(
+                np.random.randint(min_date.value, max_date.value, num_rows)
+                if min_date < max_date
+                else [min_date] * num_rows
+            )
+
+        else:
+            synthetic_data[column] = np.random.choice(df[column], num_rows)
+
+    # Convert relevant numeric columns to integers
+    int_columns = {
+        "passenger_count",
+        "PULocationID",
+        "payment_type",
+        "DOLocationID",
+        "RatecodeID",
+    }
+    for col in int_columns.intersection(df.columns):
+        synthetic_data[col] = synthetic_data[col].astype(np.int32)
+
+    # Convert relevant numeric columns to floats
+    float_columns = {
+        "trip_distance",
+        "fare_amount",
+        "extra",
+        "mta_tax",
+        "tip_amount",
+        "tolls_amount",
+        "improvement_surcharge",
+        "total_amount",
+    }
+    for col in float_columns.intersection(df.columns):
+        synthetic_data[col] = synthetic_data[col].astype(np.float64)
+
+    return synthetic_data

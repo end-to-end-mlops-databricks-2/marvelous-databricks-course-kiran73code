@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import mlflow
+import pandas as pd
 import pytz
 from databricks import feature_engineering
 from databricks.feature_engineering import FeatureFunction, FeatureLookup
@@ -10,6 +11,7 @@ from loguru import logger
 from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.pipeline import Pipeline
@@ -217,3 +219,78 @@ class FeatureLookUpModel:
 
         predictions = self.fe.score_batch(model_uri=model_uri, df=X)
         return predictions
+
+    def update_feature_table(self):
+        """
+        Updates the yellow_taxi_features table with the latest records from train and test sets.
+        1. Feature table is updated with the latest records from the train and test data only if it's contain the new payment type.
+        (In my case, I have only 5 payment types, so I am updating the feature table only if I get a new payment type in future data.)
+        """
+        queries = [
+            f"""
+            WITH max_timestamp AS (
+                SELECT MAX(update_timestamp_utc) AS max_update_timestamp
+                FROM {self.config.catalog_name}.{self.config.schema_name}.train_set
+            )
+            INSERT INTO {self.feature_table_name}
+            SELECT payment_type, payment_type_discount
+            FROM {self.config.catalog_name}.{self.config.schema_name}.train_set
+            WHERE update_timestamp_utc >= (SELECT max_update_timestamp FROM max_timestamp) AND payment_type > 5
+            """,
+            f"""
+            WITH max_timestamp AS (
+                SELECT MAX(update_timestamp_utc) AS max_update_timestamp
+                FROM {self.config.catalog_name}.{self.config.schema_name}.test_set
+            )
+            INSERT INTO {self.feature_table_name}
+            SELECT payment_type, payment_type_discount
+            FROM {self.config.catalog_name}.{self.config.schema_name}.test_set
+            WHERE update_timestamp_utc >= (SELECT max_update_timestamp FROM max_timestamp) AND payment_type > 5
+            """,
+        ]
+
+        for query in queries:
+            logger.info("Executing SQL update query...")
+            self.spark.sql(query)
+        logger.info("Yellow taxi feature paymet type discount is updated to feature table successfully.")
+
+    def model_improved(self, test_set: pd.DataFrame):
+        """
+        Evaluate the model performance on the test dataset.
+        """
+        X_test = test_set.drop(self.config.target)
+
+        predictions_latest = self.load_latest_model_and_predict(X_test).withColumnRenamed(
+            "prediction", "prediction_latest"
+        )
+
+        current_model_uri = f"runs:/{self.run_id}/lightgbm-pipeline-model-fe"
+        predictions_current = self.fe.score_batch(model_uri=current_model_uri, df=X_test).withColumnRenamed(
+            "prediction", "prediction_current"
+        )
+
+        test_set = test_set.select("trip_id", "total_amount")
+
+        logger.info("Predictions are ready.")
+
+        # Join the DataFrames on the 'trip_id' column
+        df = test_set.join(predictions_current, on="trip_id").join(predictions_latest, on="trip_id")
+
+        # Calculate the absolute error for each model
+        df = df.withColumn("error_current", F.abs(df["total_amount"] - df["prediction_current"]))
+        df = df.withColumn("error_latest", F.abs(df["total_amount"] - df["prediction_latest"]))
+
+        # Calculate the Mean Absolute Error (MAE) for each model
+        mae_current = df.agg(F.mean("error_current")).collect()[0][0]
+        mae_latest = df.agg(F.mean("error_latest")).collect()[0][0]
+
+        # Compare models based on MAE
+        logger.info(f"MAE for Current Model: {mae_current}")
+        logger.info(f"MAE for Latest Model: {mae_latest}")
+
+        if mae_current < mae_latest:
+            logger.info("Current Model performs better. Registering new model.")
+            return True
+        else:
+            logger.info("New Model performs worse. Keeping the old model.")
+            return False

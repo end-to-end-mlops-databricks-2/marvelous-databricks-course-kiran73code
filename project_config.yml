@@ -1,5 +1,20 @@
-catalog_name: mlops_dev
-schema_name: kirancr2
+prd:
+  catalog_name: mlops_dev
+  schema_name: kirancr2
+  pipeline_id: 89bb47d9-ec09-4972-a57a-fc29a8eb90d2
+
+acc:
+  catalog_name: mlops_dev
+  schema_name: kirancr2
+  pipeline_id: 89bb47d9-ec09-4972-a57a-fc29a8eb90d2
+
+dev:
+  catalog_name: mlops_dev
+  schema_name: kirancr2
+  pipeline_id: 89bb47d9-ec09-4972-a57a-fc29a8eb90d2
+
+
+
 experiment_name_basic: /Shared/yellow-taxi-basic
 experiment_name_custom: /Shared/yellow-taxi-custom
 experiment_name_fe: /Shared/yellow-taxi-fe

@@ -16,7 +16,7 @@ class ProjectConfig(BaseModel):
     experiment_name_fe: Optional[str]
 
     @classmethod
-    def from_yaml(cls, config_path: str):
+    def from_yaml(cls, config_path: str, env: str = None):
         """Load configuration from a YAML file."""
         with open(config_path, "r") as f:
             config_dict = yaml.safe_load(f)

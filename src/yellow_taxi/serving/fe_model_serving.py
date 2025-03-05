@@ -1,3 +1,5 @@
+import time
+
 import mlflow
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import (
@@ -5,6 +7,7 @@ from databricks.sdk.service.catalog import (
     OnlineTableSpecTriggeredSchedulingPolicy,
 )
 from databricks.sdk.service.serving import EndpointCoreConfigInput, ServedEntityInput
+from loguru import logger
 
 
 class FeatureLookupServing:
@@ -69,3 +72,29 @@ class FeatureLookupServing:
             )
         else:
             self.workspace.serving_endpoints.update_config(name=self.endpoint_name, served_entities=served_entities)
+
+    def update_online_table(self, config):
+        """
+        Triggers a Databricks pipeline update and monitors its state.
+        """
+
+        update_response = self.workspace.pipelines.start_update(pipeline_id=config.pipeline_id, full_refresh=False)
+
+        while True:
+            update_info = self.workspace.pipelines.get_update(
+                pipeline_id=config.pipeline_id, update_id=update_response.update_id
+            )
+            state = update_info.update.state.value
+
+            if state == "COMPLETED":
+                logger.info("Pipeline update completed successfully.")
+                break
+            elif state in ["FAILED", "CANCELED"]:
+                logger.error("Pipeline update failed.")
+                raise SystemError("Online table failed to update.")
+            elif state == "WAITING_FOR_RESOURCES":
+                logger.warning("Pipeline is waiting for resources.")
+            else:
+                logger.info(f"Pipeline is in {state} state.")
+
+            time.sleep(30)
