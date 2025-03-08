@@ -8,8 +8,8 @@ from yellow_taxi.models.basic_model import BasicModel
 
 # COMMAND ----------
 # Default profile:
-mlflow.set_tracking_uri("databricks://dbc-4894232b-9fc5")
-mlflow.set_registry_uri("databricks-uc://dbc-4894232b-9fc5")
+mlflow.set_tracking_uri("databricks")
+mlflow.set_registry_uri("databricks-uc")
 
 # Profile called "course"
 # mlflow.set_tracking_uri("databricks://course")
