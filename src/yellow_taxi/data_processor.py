@@ -160,7 +160,7 @@ class DataProcessor:
         )
 
 
-def generate_synthetic_data(df, num_rows=10):
+def generate_synthetic_data(df, drift: False, num_rows=10):
     """Generates synthetic data based on the distribution of the input DataFrame."""
     synthetic_data = pd.DataFrame()
 
@@ -214,5 +214,13 @@ def generate_synthetic_data(df, num_rows=10):
     }
     for col in float_columns.intersection(df.columns):
         synthetic_data[col] = synthetic_data[col].astype(np.float64)
+
+    # create sample drifted data for monitoring testing
+    if drift:
+        # Skew the top features to introduce drift
+        top_features = ["fare_amount", "trip_distance"]  # Select top 2 features
+        for feature in top_features:
+            if feature in synthetic_data.columns:
+                synthetic_data[feature] = synthetic_data[feature] * 2
 
     return synthetic_data
