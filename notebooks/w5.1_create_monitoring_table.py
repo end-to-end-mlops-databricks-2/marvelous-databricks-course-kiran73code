@@ -1,9 +1,7 @@
 # Databricks notebook source
-!pip install ../.
+# MAGIC %python
+# pip install ../.
 
-# COMMAND ----------
-
-dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -12,7 +10,15 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+import datetime
+import itertools
+import time
+
 import pandas as pd
+import requests
+from databricks.connect import DatabricksSession
+from databricks.sdk import WorkspaceClient
+from pyspark.dbutils import DBUtils
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, current_timestamp, to_utc_timestamp
 from sklearn.ensemble import RandomForestRegressor
@@ -20,8 +26,10 @@ from sklearn.preprocessing import LabelEncoder
 
 from yellow_taxi.config import ProjectConfig
 from yellow_taxi.data_processor import generate_synthetic_data
+from yellow_taxi.monitoring import create_or_refresh_monitoring
 
 spark = SparkSession.builder.getOrCreate()
+dbutils = DBUtils(spark)
 
 # Load configuration
 config = ProjectConfig.from_yaml(config_path="../project_config.yml", env="dev")
@@ -36,10 +44,10 @@ test_set = spark.table(f"{config.catalog_name}.{config.schema_name}.test_set").t
 # Encode categorical and datetime variables
 def preprocess_data(df):
     label_encoders = {}
-    for col in df.select_dtypes(include=["object", "datetime"]).columns:
+    for coll in df.select_dtypes(include=["object", "datetime"]).columns:
         le = LabelEncoder()
-        df[col] = le.fit_transform(df[col].astype(str))
-        label_encoders[col] = le
+        df[coll] = le.fit_transform(df[coll].astype(str))
+        label_encoders[coll] = le
     return df, label_encoders
 
 
@@ -65,9 +73,6 @@ print("Top 5 important features:")
 print(feature_importances.head(5))
 
 
-%md
-## Generate Synthetic Data
-
 # COMMAND ----------
 
 
@@ -90,33 +95,9 @@ inference_data_skewed_spark.write.mode("overwrite").saveAsTable(
 
 # COMMAND ----------
 
-import time
-
-from databricks.sdk import WorkspaceClient
 
 workspace = WorkspaceClient()
 
-# write into feature table; update online table
-# spark.sql(f"""
-#     INSERT INTO {config.catalog_name}.{config.schema_name}.house_features
-#     SELECT Id, OverallQual, GrLivArea, GarageCars
-#     FROM {config.catalog_name}.{config.schema_name}.inference_data_skewed
-# """)
-
-# update_response = workspace.pipelines.start_update(pipeline_id=config.pipeline_id, full_refresh=False)
-
-# while True:
-#     update_info = workspace.pipelines.get_update(pipeline_id=config.pipeline_id, update_id=update_response.update_id)
-#     state = update_info.update.state.value
-#     if state == "COMPLETED":
-#         break
-#     elif state in ["FAILED", "CANCELED"]:
-#         raise SystemError("Online table failed to update.")
-#     elif state == "WAITING_FOR_RESOURCES":
-#         print("Pipeline is waiting for resources.")
-#     else:
-#         print(f"Pipeline is in {state} state.")
-#     time.sleep(30)
 
 # COMMAND ----------
 
@@ -124,17 +105,6 @@ workspace = WorkspaceClient()
 # MAGIC ## Send Data to the Endpoint
 
 # COMMAND ----------
-
-import datetime
-import itertools
-
-import pandas as pd
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import  col,current_timestamp, to_utc_timestamp
-
-from yellow_taxi.config import ProjectConfig
-
-spark = SparkSession.builder.getOrCreate()
 
 # Load configuration
 config = ProjectConfig.from_yaml(config_path="../project_config.yml", env="dev")
@@ -160,11 +130,6 @@ host = spark.conf.get("spark.databricks.workspaceUrl")
 
 # COMMAND ----------
 
-
-import time
-
-import requests
-from databricks.sdk import WorkspaceClient
 
 workspace = WorkspaceClient()
 
@@ -248,12 +213,6 @@ for index, record in enumerate(itertools.cycle(sampled_skewed_records)):
 
 # COMMAND ----------
 
-from databricks.connect import DatabricksSession
-from databricks.sdk import WorkspaceClient
-from pyspark.sql.functions import col
-
-from yellow_taxi.config import ProjectConfig
-from yellow_taxi.monitoring import create_or_refresh_monitoring
 
 spark = DatabricksSession.builder.getOrCreate()
 workspace = WorkspaceClient()

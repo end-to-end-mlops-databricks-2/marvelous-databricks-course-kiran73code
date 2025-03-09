@@ -12,7 +12,6 @@ def create_or_refresh_monitoring(config, spark, workspace):
     inf_table = spark.sql(
         f"SELECT * FROM {config.catalog_name}.{config.schema_name}.`yellow_taxi_fe_model_serving_payload`"
     )
-    
 
     request_schema = StructType(
         [
@@ -30,7 +29,6 @@ def create_or_refresh_monitoring(config, spark, workspace):
                             StructField("transaction_hour", IntegerType(), True),
                             StructField("transaction_year", IntegerType(), True),
                             StructField("payment_type", IntegerType(), True),
-                           
                         ]
                     )
                 ),
@@ -57,8 +55,7 @@ def create_or_refresh_monitoring(config, spark, workspace):
     inf_table_parsed = inf_table_parsed.withColumn("parsed_response", F.from_json(F.col("response"), response_schema))
 
     df_exploded = inf_table_parsed.withColumn("record", F.explode(F.col("parsed_request.dataframe_records")))
-    
-    
+
     df_final = df_exploded.select(
         F.from_unixtime(F.col("timestamp_ms") / 1000).cast("timestamp").alias("timestamp"),
         "timestamp_ms",
@@ -81,9 +78,17 @@ def create_or_refresh_monitoring(config, spark, workspace):
     inference_set_skewed = spark.table(f"{config.catalog_name}.{config.schema_name}.inference_data_skewed")
 
     df_final_with_status = (
-        df_final.join(test_set.select("transaction_month","transaction_day","transaction_hour", "total_amount"), on=["transaction_month","transaction_day","transaction_hour"], how="left")
+        df_final.join(
+            test_set.select("transaction_month", "transaction_day", "transaction_hour", "total_amount"),
+            on=["transaction_month", "transaction_day", "transaction_hour"],
+            how="left",
+        )
         .withColumnRenamed("total_amount", "total_amount_test")
-        .join(inference_set_skewed.select("transaction_month","transaction_day","transaction_hour", "total_amount"), on=["transaction_month","transaction_day","transaction_hour"], how="left")
+        .join(
+            inference_set_skewed.select("transaction_month", "transaction_day", "transaction_hour", "total_amount"),
+            on=["transaction_month", "transaction_day", "transaction_hour"],
+            how="left",
+        )
         .withColumnRenamed("total_amount", "total_amount_inference")
         .select("*", F.coalesce(F.col("total_amount_test"), F.col("total_amount_inference")).alias("total_amount"))
         .drop("total_amount_test", "total_amount_inference")
@@ -96,7 +101,9 @@ def create_or_refresh_monitoring(config, spark, workspace):
 
     df_final_with_features = df_final_with_status.join(yellow_taxi_features, on="payment_type", how="left")
 
-    df_final_with_features = df_final_with_features.withColumn("payment_type_discount", F.col("payment_type_discount").cast("double"))
+    df_final_with_features = df_final_with_features.withColumn(
+        "payment_type_discount", F.col("payment_type_discount").cast("double")
+    )
 
     df_final_with_features.write.format("delta").mode("append").saveAsTable(
         f"{config.catalog_name}.{config.schema_name}.model_monitoring"
