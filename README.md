@@ -118,7 +118,7 @@ uv lock
 
 
 ### Week 4: Model Deployment using Asset Bundles
--- Created an asset bundle containing the model and necessary dependencies
+- Created an asset bundle containing the model and necessary dependencies
 - Generated synthetic data from the existing dataset to simulate real-time feature processing and model deployment
 - Deployed the asset bundle to a staging environment for testing
 - Implemented automated deployment pipeline for asset bundle creation and deployment
@@ -132,3 +132,40 @@ uv lock
 
 ![Databricks Workflow Pipeline](imgs/pipeline.png)
 *Figure: Data Processing Pipeline Workflow*
+
+
+### Week 5: Model Monitoring Activities
+
+#### Overview
+During Week 5, significant progress was made in implementing model monitoring for regression ML models, with a particular focus on lakehouse monitoring. This summary outlines the key activities undertaken, including the creation and refreshing of monitoring tables, integration of inference logs, and evaluation of model performance metrics.
+
+#### Key Activities
+
+#### 1. Creation of Monitoring Tables
+- Developed a robust monitoring table structure to track model performance over time.
+- Utilized the `create_monitoring_table` function to establish the necessary schema and properties for the monitoring table in the lakehouse.
+
+#### 2. Refreshing Monitoring Data
+- Implemented the `create_or_refresh_monitoring` function to ensure that the monitoring table is updated with the latest inference data.
+- This function parses incoming requests and responses, allowing for real-time tracking of model predictions and actual outcomes.
+
+#### 3. Integration of Inference Logs
+- Integrated inference logs to capture detailed information about model predictions, including input features and output predictions.
+- This integration enables the identification of potential issues and performance degradation over time.
+
+#### 4. Evaluation of Model Performance Metrics
+- Conducted evaluations of model performance metrics to assess the accuracy and reliability of predictions.
+- Metrics such as mean absolute error (MAE) and prediction accuracy were monitored to ensure the model meets performance standards.
+
+#### 5. Continuous Improvement
+- Established a feedback loop for continuous improvement of the model monitoring process.
+- Regular updates and evaluations will be conducted to refine the monitoring framework and enhance model performance.
+
+#### 6. Databricks Alert's.
+- Create automated alerts using SQL queries on the `model_monitoring_profile_metrics` table to trigger notifications when the regression model's MAE score exceeds the defined threshold.
+
+![Databricks Alert](imgs/alert.png)
+*Figure: Databricks Alert*
+
+#### 7. Workflow for monitoring.
+- Created a dedicated workflow using asset bundles for continuous model monitoring.

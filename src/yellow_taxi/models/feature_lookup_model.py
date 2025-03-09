@@ -279,9 +279,20 @@ class FeatureLookUpModel:
         df = df.withColumn("error_current", F.abs(df["total_amount"] - df["prediction_current"]))
         df = df.withColumn("error_latest", F.abs(df["total_amount"] - df["prediction_latest"]))
 
+        # calculate the mean squared error(MSE) for each model
+        df = df.withColumn("mse_current", F.pow(df["total_amount"] - df["prediction_current"], 2))
+        df = df.withColumn("mse_latest", F.pow(df["total_amount"] - df["prediction_latest"], 2))
+
+        mse_current = df.agg(F.mean("mse_current")).collect()[0][0]
+        mse_latest = df.agg(F.mean("mse_latest")).collect()[0][0]
+
         # Calculate the Mean Absolute Error (MAE) for each model
         mae_current = df.agg(F.mean("error_current")).collect()[0][0]
         mae_latest = df.agg(F.mean("error_latest")).collect()[0][0]
+
+        # Compare models based on MSE
+        logger.info(f"MSE for Current Model: {mse_current}")
+        logger.info(f"MSE for Latest Model: {mse_latest}")
 
         # Compare models based on MAE
         logger.info(f"MAE for Current Model: {mae_current}")
@@ -290,6 +301,11 @@ class FeatureLookUpModel:
         if mae_current < mae_latest:
             logger.info("Current Model performs better. Registering new model.")
             return True
+
+        elif mse_current < mse_latest:
+            logger.info("Current Model performs better. Registering new model.")
+            return True
+
         else:
             logger.info("New Model performs worse. Keeping the old model.")
             return False

@@ -5,6 +5,9 @@
 bundle:
   name: marvelous-databricks-course-kiran73code
 
+include:
+  - bundle_monitoring.yml
+
 artifacts:
   default:
     type: whl
@@ -17,7 +20,7 @@ variables:
     default: assetbundledeply
   branch:
     description: branch
-    default: main
+    default: feature/monitoring
   schedule_pause_status:
     description: schedule pause status
     default: UNPAUSED
