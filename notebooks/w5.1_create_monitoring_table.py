@@ -1,5 +1,9 @@
 # Databricks notebook source
-# !pip install ../.
+!pip install ../.
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -47,6 +51,7 @@ target = train_set["total_amount"]
 
 
 # COMMAND ----------
+
 # Train a Random Forest model
 model = RandomForestRegressor(random_state=42)
 model.fit(features, target)
@@ -60,8 +65,8 @@ print("Top 5 important features:")
 print(feature_importances.head(5))
 
 
-# MAGIC %md
-# MAGIC ## Generate Synthetic Data
+%md
+## Generate Synthetic Data
 
 # COMMAND ----------
 
@@ -125,7 +130,7 @@ import itertools
 
 import pandas as pd
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import current_timestamp, to_utc_timestamp
+from pyspark.sql.functions import  col,current_timestamp, to_utc_timestamp
 
 from yellow_taxi.config import ProjectConfig
 
@@ -165,33 +170,17 @@ workspace = WorkspaceClient()
 
 # Required columns for inference
 required_columns = [
-    "LotFrontage",
-    "LotArea",
-    "OverallCond",
-    "YearBuilt",
-    "YearRemodAdd",
-    "MasVnrArea",
-    "TotalBsmtSF",
-    "MSZoning",
-    "Street",
-    "Alley",
-    "LotShape",
-    "LandContour",
-    "Neighborhood",
-    "Condition1",
-    "BldgType",
-    "HouseStyle",
-    "RoofStyle",
-    "Exterior1st",
-    "Exterior2nd",
-    "MasVnrType",
-    "Foundation",
-    "Heating",
-    "CentralAir",
-    "SaleType",
-    "SaleCondition",
-    "Id",
+    "fare_amount",
+    "passenger_count",
+    "trip_distance",
+    "PULocationID",
+    "transaction_month",
+    "transaction_day",
+    "transaction_hour",
+    "transaction_year",
+    "payment_type",
 ]
+
 
 # Sample records from inference datasets
 sampled_skewed_records = inference_data_skewed[required_columns].to_dict(orient="records")
@@ -270,6 +259,6 @@ spark = DatabricksSession.builder.getOrCreate()
 workspace = WorkspaceClient()
 
 # Load configuration
-config = ProjectConfig.from_yaml(config_path="../project_config.yml", env="prd")
+config = ProjectConfig.from_yaml(config_path="../project_config.yml", env="dev")
 
 create_or_refresh_monitoring(config=config, spark=spark, workspace=workspace)
