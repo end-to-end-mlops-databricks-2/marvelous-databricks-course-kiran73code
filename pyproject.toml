@@ -1,6 +1,6 @@
 [project]
 name = "yellow-taxi"
-version = "0.0.17"
+version = "0.1.1"
 description = "yellow taxi tripdata total amount prediction project"
 requires-python = ">=3.11, <3.12"
 dependencies = [
